@@ -1,0 +1,41 @@
+name = "ferraz-barber-club-worker"
+main = "worker.ts"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+# D1 Database Binding (Configuração Base / Local)
+[[d1_databases]]
+binding = "DB"
+database_name = "ferraz-barber-club-db"
+database_id = "PLACEHOLDER_D1_DATABASE_ID"
+migrations_dir = "migrations"
+
+[vars]
+ENVIRONMENT = "development"
+CORS_ORIGIN = "*"
+
+# Ambiente de Preview
+[env.preview]
+name = "ferraz-barber-club-worker-preview"
+[env.preview.vars]
+ENVIRONMENT = "preview"
+CORS_ORIGIN = "*"
+
+[[env.preview.d1_databases]]
+binding = "DB"
+database_name = "ferraz-barber-club-db-preview"
+database_id = "PLACEHOLDER_D1_DATABASE_ID_PREVIEW"
+migrations_dir = "migrations"
+
+# Ambiente de Produção
+[env.production]
+name = "ferraz-barber-club-worker-prod"
+[env.production.vars]
+ENVIRONMENT = "production"
+CORS_ORIGIN = "*"
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "ferraz-barber-club-db"
+database_id = "PLACEHOLDER_D1_DATABASE_ID_PRODUCTION"
+migrations_dir = "migrations"
