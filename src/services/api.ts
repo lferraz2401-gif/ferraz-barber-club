@@ -11,7 +11,6 @@ import {
   DashboardMetrics,
   Expense,
 } from '../types/index.js';
-import { isSupabaseConfigured, supabaseApi } from '../lib/supabase.js';
 
 const API_BASE = '/api';
 
@@ -57,8 +56,8 @@ export const api = {
     if (params?.endDate) searchParams.append('endDate', params.endDate);
     if (params?.category) searchParams.append('category', params.category);
     if (params?.barberId) searchParams.append('barberId', params.barberId);
-    const query = searchParams.toString();
-    const res = await fetch(`${API_BASE}/expenses${query ? `?${query}` : ''}`);
+
+    const res = await fetch(`${API_BASE}/expenses?${searchParams.toString()}`);
     return handleResponse<Expense[]>(res);
   },
 
@@ -88,28 +87,17 @@ export const api = {
 
   // Customers & CRM
   async getCustomers(search?: string): Promise<Customer[]> {
-    if (isSupabaseConfigured) {
-      return supabaseApi.getCustomers(search);
-    }
     const url = search ? `${API_BASE}/customers?search=${encodeURIComponent(search)}` : `${API_BASE}/customers`;
     const res = await fetch(url);
     return handleResponse<Customer[]>(res);
   },
 
   async getCustomerById(id: string): Promise<Customer & { appointments: Appointment[] }> {
-    if (isSupabaseConfigured) {
-      const data = await supabaseApi.getCustomerById(id);
-      if (!data) throw new Error('Cliente não encontrado.');
-      return data;
-    }
     const res = await fetch(`${API_BASE}/customers/${id}`);
     return handleResponse<Customer & { appointments: Appointment[] }>(res);
   },
 
   async createCustomer(data: Partial<Customer>): Promise<Customer> {
-    if (isSupabaseConfigured) {
-      return supabaseApi.createCustomer(data);
-    }
     const res = await fetch(`${API_BASE}/customers`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -119,9 +107,6 @@ export const api = {
   },
 
   async updateCustomer(id: string, data: Partial<Customer>): Promise<Customer> {
-    if (isSupabaseConfigured) {
-      return supabaseApi.updateCustomer(id, data);
-    }
     const res = await fetch(`${API_BASE}/customers/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -131,11 +116,6 @@ export const api = {
   },
 
   async deleteCustomer(id: string): Promise<{ message: string }> {
-    if (isSupabaseConfigured) {
-      const ok = await supabaseApi.deleteCustomer(id);
-      if (!ok) throw new Error('Não foi possível excluir o cliente no Supabase.');
-      return { message: 'Cliente removido com sucesso.' };
-    }
     const res = await fetch(`${API_BASE}/customers/${id}`, { method: 'DELETE' });
     return handleResponse<{ message: string }>(res);
   },
@@ -146,65 +126,6 @@ export const api = {
     tier: 'STANDARD' | 'PLUS' | 'PRO',
     customStartDate?: string
   ): Promise<Customer> {
-    if (isSupabaseConfigured) {
-      const now = new Date();
-      const startDate = customStartDate || now.toISOString().split('T')[0];
-      const renewsDate = new Date(startDate);
-      renewsDate.setMonth(renewsDate.getMonth() + 1);
-      const renewsAt = renewsDate.toISOString().split('T')[0];
-
-      let credits = {
-        haircutsTotal: 4,
-        haircutsUsed: 0,
-        eyebrowsTotal: 4,
-        eyebrowsUsed: 0,
-        beardsTotal: 1,
-        beardsUsed: 0,
-        skinCareTotal: 0,
-        skinCareUsed: 0,
-        pomadeGiftTotal: 0,
-        pomadeGiftClaimed: false,
-      };
-
-      if (tier === 'PLUS') {
-        credits = {
-          haircutsTotal: 4,
-          haircutsUsed: 0,
-          eyebrowsTotal: 4,
-          eyebrowsUsed: 0,
-          beardsTotal: 2,
-          beardsUsed: 0,
-          skinCareTotal: 1,
-          skinCareUsed: 0,
-          pomadeGiftTotal: 0,
-          pomadeGiftClaimed: false,
-        };
-      } else if (tier === 'PRO') {
-        credits = {
-          haircutsTotal: 4,
-          haircutsUsed: 0,
-          eyebrowsTotal: 4,
-          eyebrowsUsed: 0,
-          beardsTotal: 4,
-          beardsUsed: 0,
-          skinCareTotal: 2,
-          skinCareUsed: 0,
-          pomadeGiftTotal: 1,
-          pomadeGiftClaimed: false,
-        };
-      }
-
-      const membership = {
-        tier,
-        startDate,
-        renewsAt,
-        active: true,
-        credits,
-      };
-
-      return supabaseApi.updateCustomer(customerId, { membership });
-    }
-
     const res = await fetch(`${API_BASE}/customers/${customerId}/membership`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -214,9 +135,6 @@ export const api = {
   },
 
   async removeCustomerMembership(customerId: string): Promise<Customer> {
-    if (isSupabaseConfigured) {
-      return supabaseApi.updateCustomer(customerId, { membership: undefined });
-    }
     const res = await fetch(`${API_BASE}/customers/${customerId}/membership`, {
       method: 'DELETE',
     });
@@ -227,17 +145,6 @@ export const api = {
     customerId: string,
     patch: { credits?: any; active?: boolean; renewsAt?: string }
   ): Promise<Customer> {
-    if (isSupabaseConfigured) {
-      const cust = await supabaseApi.getCustomerById(customerId);
-      if (!cust || !cust.membership) throw new Error('Cliente sem assinatura Club ativa.');
-      const updatedMem = {
-        ...cust.membership,
-        credits: patch.credits ? { ...cust.membership.credits, ...patch.credits } : cust.membership.credits,
-        active: patch.active !== undefined ? patch.active : cust.membership.active,
-        renewsAt: patch.renewsAt || cust.membership.renewsAt,
-      };
-      return supabaseApi.updateCustomer(customerId, { membership: updatedMem });
-    }
     const res = await fetch(`${API_BASE}/customers/${customerId}/membership`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -254,21 +161,6 @@ export const api = {
     totalCount: number;
     returnNeededCount: number;
   }> {
-    if (isSupabaseConfigured) {
-      const customers = await supabaseApi.getCustomers();
-      const recent = customers.filter((c) => c.status === 'ACTIVE' && c.totalVisits > 0);
-      const returnNeeded = customers.filter((c) => c.status === 'RETURN_NEEDED');
-      const inactive = customers.filter((c) => c.status === 'INACTIVE');
-      const newClients = customers.filter((c) => c.totalVisits === 0);
-      return {
-        recent,
-        returnNeeded,
-        inactive,
-        newClients,
-        totalCount: customers.length,
-        returnNeededCount: returnNeeded.length,
-      };
-    }
     const res = await fetch(`${API_BASE}/crm`);
     return handleResponse(res);
   },
@@ -328,9 +220,6 @@ export const api = {
     customerId?: string;
     status?: string;
   }): Promise<Appointment[]> {
-    if (isSupabaseConfigured) {
-      return supabaseApi.getAppointments(filters);
-    }
     const params = new URLSearchParams();
     if (filters?.date) params.append('date', filters.date);
     if (filters?.barberId) params.append('barberId', filters.barberId);
@@ -371,9 +260,6 @@ export const api = {
     isFitIn?: boolean;
     source?: 'INTERNAL_APP' | 'PUBLIC_BOOKING';
   }): Promise<Appointment> {
-    if (isSupabaseConfigured) {
-      return supabaseApi.createAppointment(data);
-    }
     const res = await fetch(`${API_BASE}/appointments`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -383,9 +269,6 @@ export const api = {
   },
 
   async updateAppointment(id: string, data: Partial<Appointment>): Promise<Appointment> {
-    if (isSupabaseConfigured) {
-      return supabaseApi.updateAppointment(id, data);
-    }
     const res = await fetch(`${API_BASE}/appointments/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -395,11 +278,6 @@ export const api = {
   },
 
   async deleteAppointment(id: string): Promise<{ message: string }> {
-    if (isSupabaseConfigured) {
-      const ok = await supabaseApi.deleteAppointment(id);
-      if (!ok) throw new Error('Não foi possível excluir o agendamento no Supabase.');
-      return { message: 'Agendamento excluído.' };
-    }
     const res = await fetch(`${API_BASE}/appointments/${id}`, { method: 'DELETE' });
     return handleResponse<{ message: string }>(res);
   },
