@@ -1071,16 +1071,19 @@ app.get('/api/blocks', (req, res) => {
 app.post('/api/blocks', (req, res) => {
   try {
     const { type, barberId, startDate, endDate, startTime, endTime, reason } = req.body;
-    if (!type || !startDate || !endDate) {
-      return res.status(400).json({ error: 'Tipo, data inicial e final são obrigatórios.' });
+    if (!startDate) {
+      return res.status(400).json({ error: 'A data inicial é obrigatória.' });
     }
+
+    const effectiveEndDate = endDate || startDate;
+    const blockType = type || (startTime && endTime ? 'TIME_BLOCK' : 'OFF_DAY');
 
     const newBlock = {
       id: `block_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-      type,
+      type: blockType,
       barberId: barberId || undefined,
       startDate,
-      endDate,
+      endDate: effectiveEndDate,
       startTime: startTime || undefined,
       endTime: endTime || undefined,
       reason: reason || 'Bloqueio administrativo',
@@ -1098,7 +1101,7 @@ app.delete('/api/blocks/:id', (req, res) => {
   try {
     const success = db.deleteBlock(req.params.id);
     if (!success) return res.status(404).json({ error: 'Bloqueio não encontrado.' });
-    res.json({ message: 'Bloqueio removido.' });
+    res.json({ success: true, message: 'Bloqueio removido.' });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

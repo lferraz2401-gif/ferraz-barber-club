@@ -186,11 +186,18 @@ export const AgendaView: React.FC = () => {
     if (!checkoutApt) return;
     try {
       setUpdatingId(checkoutApt.id);
+      const price = Number(checkoutPrice) || 0;
+      const rate = Number(checkoutCommissionRate) ?? 50;
+      const commissionAmount = Math.round(((price * rate) / 100) * 100) / 100;
+      const shopAmount = Math.round((price - commissionAmount) * 100) / 100;
+
       await api.updateAppointment(checkoutApt.id, {
         status: 'COMPLETED',
         paymentMethod: checkoutPaymentMethod,
-        priceCharged: Number(checkoutPrice),
-        commissionRate: Number(checkoutCommissionRate),
+        priceCharged: price,
+        commissionRate: rate,
+        commissionAmount,
+        shopAmount,
       });
       addToast({
         type: 'success',

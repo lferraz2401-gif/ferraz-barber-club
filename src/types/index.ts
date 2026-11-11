@@ -68,8 +68,15 @@ export interface Customer {
   preferredBarberName?: string;
   status: 'ACTIVE' | 'RETURN_NEEDED' | 'INACTIVE';
 }
-
 export type PaymentMethod = 'PIX' | 'CREDIT_CARD' | 'DEBIT_CARD' | 'CASH' | 'CLUB_PLAN';
+
+export interface DaySchedule {
+  active: boolean; // se atende neste dia
+  startTime: string; // "09:00"
+  endTime: string; // "20:00"
+  lunchStart?: string; // "12:00"
+  lunchEnd?: string; // "13:00"
+}
 
 export interface Barber {
   id: string;
@@ -87,7 +94,9 @@ export interface Barber {
   lunchStart: string; // "12:00"
   lunchEnd: string; // "13:00"
   defaultCommissionRate?: number; // e.g. 50 (50%)
+  dailySchedule?: Record<number, DaySchedule>; // 0=Dom, 1=Seg, 2=Ter, 3=Qua, 4=Qui, 5=Sex, 6=Sáb
 }
+
 
 export interface Service {
   id: string;

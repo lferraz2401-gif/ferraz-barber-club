@@ -25,7 +25,9 @@ import {
   UserPlus,
   Mail,
   KeyRound,
+  Cloud,
 } from 'lucide-react';
+import { isSupabaseConfigured } from '../../lib/supabase.js';
 
 const WEEKDAYS = [
   { id: 1, label: 'Segunda', short: 'SEG' },
@@ -657,6 +659,54 @@ export const SettingsView: React.FC = () => {
           >
             Abrir Central WhatsApp →
           </button>
+        </div>
+
+        {/* Section: Banco de Dados em Nuvem (Supabase) */}
+        <div className="p-5 rounded-2xl bg-[#121215] border border-white/10 space-y-4 shadow-xl">
+          <div className="flex items-center justify-between pb-2.5 border-b border-white/10">
+            <div className="flex items-center gap-2">
+              <Cloud className="w-4 h-4 text-emerald-400" />
+              <h3 className="font-display font-black text-base text-white uppercase tracking-wider">
+                BANCO DE DADOS EM NUVEM (SUPABASE)
+              </h3>
+            </div>
+            <span
+              className={`text-[10px] font-mono px-2 py-0.5 rounded uppercase font-bold ${
+                isSupabaseConfigured
+                  ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30'
+                  : 'bg-amber-500/10 text-amber-300 border border-amber-500/30'
+              }`}
+            >
+              {isSupabaseConfigured ? '● SUPABASE CONECTADO' : '○ MODO LOCAL / RENDER'}
+            </span>
+          </div>
+
+          <p className="text-xs text-zinc-400">
+            Integração nativa com o Supabase utilizando as variáveis de ambiente <strong className="text-white font-mono">VITE_SUPABASE_URL</strong> e <strong className="text-white font-mono">VITE_SUPABASE_ANON_KEY</strong>. Todas as operações de clientes e agendamentos são executadas de forma assíncrona diretamente nas tabelas <strong className="text-amber-400 font-mono">clientes</strong> e <strong className="text-amber-400 font-mono">agendamentos</strong>.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div className="p-3.5 rounded-xl bg-black/40 border border-white/5 space-y-1">
+              <span className="text-zinc-500 uppercase text-[10px] font-mono block">Status da Conexão</span>
+              <div className="font-display font-bold text-sm text-emerald-400 flex items-center gap-1.5 uppercase">
+                <CheckCircle2 className="w-4 h-4" />
+                {isSupabaseConfigured ? 'Pronto para Produção (Render)' : 'Configurado com Fallback Automático'}
+              </div>
+              <span className="text-[11px] font-mono text-zinc-400 block pt-0.5">
+                Tabelas: <span className="text-amber-400">clientes</span> & <span className="text-amber-400">agendamentos</span>
+              </span>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-black/40 border border-white/5 space-y-1">
+              <span className="text-zinc-500 uppercase text-[10px] font-mono block">Driver Ativo</span>
+              <div className="font-mono font-bold text-sm text-white">
+                @supabase/supabase-js
+              </div>
+              <span className="text-[11px] font-mono text-zinc-400 block pt-0.5">
+                Mapeamento resiliente de colunas (PT-BR e EN)
+              </span>
+            </div>
+          </div>
         </div>
 
         {/* Section 4: Backup Inteligente & Integridade de Dados */}

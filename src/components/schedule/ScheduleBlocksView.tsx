@@ -4,16 +4,12 @@ import { api } from '../../services/api.js';
 import { ScheduleBlock } from '../../types/index.js';
 import { getOperationDateTime } from '../../utils/datetime.js';
 import {
-  CalendarX2,
   Plus,
   Trash2,
   Clock,
   Calendar,
-  AlertCircle,
-  ShieldAlert,
   Save,
   X,
-  UserCheck,
   Ban,
 } from 'lucide-react';
 
@@ -88,9 +84,10 @@ export const ScheduleBlocksView: React.FC = () => {
     try {
       setSubmitting(true);
       await api.createBlock({
+        type: isFullDay ? 'OFF_DAY' : 'TIME_BLOCK',
         barberId: targetBarberId === 'all' ? undefined : targetBarberId,
         startDate,
-        endDate,
+        endDate: endDate || startDate,
         startTime: isFullDay ? undefined : startTime,
         endTime: isFullDay ? undefined : endTime,
         reason: reason.trim(),
@@ -117,7 +114,7 @@ export const ScheduleBlocksView: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      {/* Header (FC 25 Athletic Style) */}
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#0c1018] p-4 rounded-xl border border-[#1a2333] shadow-lg shadow-black/30">
         <div className="flex items-center gap-3">
           <div className="w-2.5 h-9 bg-rose-500 rounded-sm shrink-0" />
@@ -199,7 +196,7 @@ export const ScheduleBlocksView: React.FC = () => {
           );
         })}
 
-        {blocks.length === 0 && (
+        {blocks.length === 0 && !loading && (
           <div className="p-12 text-center text-zinc-500 text-xs font-mono rounded-xl bg-[#0c1018] border border-[#1a2333]">
             Nenhum bloqueio configurado no momento. Todas as cadeiras estão operando normalmente.
           </div>

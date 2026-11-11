@@ -112,6 +112,7 @@ export function checkBarberAvailability(
   }
 
   // 2. Check Day of Week
+  // 2. Check Day of Week & Daily Custom Schedule
   const targetDate = new Date(`${dateStr}T12:00:00`);
   const dayOfWeek = targetDate.getDay(); // 0 = Sun, 1 = Mon ...
 
@@ -122,33 +123,40 @@ export function checkBarberAvailability(
     };
   }
 
-  if (!barber.workDays.includes(dayOfWeek) && !isFitIn) {
+  const daySchedule = barber.dailySchedule?.[dayOfWeek];
+  const isDayActive = daySchedule !== undefined ? daySchedule.active : barber.workDays.includes(dayOfWeek);
+
+  if (!isDayActive && !isFitIn) {
     return {
       available: false,
       reason: `${barber.name} não trabalha neste dia da semana (dia de folga regular).`,
     };
   }
 
-  // 3. Check Barber Individual Shifts
-  const barberStartMin = timeToMinutes(barber.startTime);
-  const barberEndMin = timeToMinutes(barber.endTime);
+  // 3. Check Barber Individual Shifts (por dia da semana ou padrão)
+  const effectiveStartTime = daySchedule?.startTime || barber.startTime;
+  const effectiveEndTime = daySchedule?.endTime || barber.endTime;
+  const barberStartMin = timeToMinutes(effectiveStartTime);
+  const barberEndMin = timeToMinutes(effectiveEndTime);
   if (!isFitIn) {
     if (aptStartMin < barberStartMin || aptEndMin > barberEndMin) {
       return {
         available: false,
-        reason: `Fora da escala de ${barber.name} (${barber.startTime} às ${barber.endTime}).`,
+        reason: `Fora da escala de ${barber.name} neste dia (${effectiveStartTime} às ${effectiveEndTime}).`,
       };
     }
   }
 
   // 4. Check Barber Lunch Break
-  const lunchStartMin = timeToMinutes(barber.lunchStart);
-  const lunchEndMin = timeToMinutes(barber.lunchEnd);
+  const effectiveLunchStart = daySchedule?.lunchStart || barber.lunchStart;
+  const effectiveLunchEnd = daySchedule?.lunchEnd || barber.lunchEnd;
+  const lunchStartMin = timeToMinutes(effectiveLunchStart);
+  const lunchEndMin = timeToMinutes(effectiveLunchEnd);
   // Interval overlap: max(start1, start2) < min(end1, end2)
-  if (!isFitIn && Math.max(aptStartMin, lunchStartMin) < Math.min(aptEndMin, lunchEndMin)) {
+  if (!isFitIn && lunchStartMin < lunchEndMin && Math.max(aptStartMin, lunchStartMin) < Math.min(aptEndMin, lunchEndMin)) {
     return {
       available: false,
-      reason: `Horário coincide com o intervalo de almoço de ${barber.name} (${barber.lunchStart} às ${barber.lunchEnd}).`,
+      reason: `Horário coincide com o intervalo de almoço de ${barber.name} (${effectiveLunchStart} às ${effectiveLunchEnd}).`,
     };
   }
 
@@ -242,9 +250,19 @@ export function getAvailableSlots(
 
   if (!barber || !barber.active) return [];
 
+  const targetDate = new Date(`${dateStr}T12:00:00`);
+  const dayOfWeek = targetDate.getDay();
+  const daySchedule = barber.dailySchedule?.[dayOfWeek];
+  const isDayActive = daySchedule !== undefined ? daySchedule.active : barber.workDays.includes(dayOfWeek);
+
+  if (!isDayActive) return [];
+
+  const effectiveStartTime = daySchedule?.startTime || barber.startTime;
+  const effectiveEndTime = daySchedule?.endTime || barber.endTime;
+
   const slots: { time: string; available: boolean; reason?: string }[] = [];
-  const startMin = timeToMinutes(barber.startTime);
-  const endMin = timeToMinutes(barber.endTime);
+  const startMin = timeToMinutes(effectiveStartTime);
+  const endMin = timeToMinutes(effectiveEndTime);
   const shopOpenMin = timeToMinutes(settings.openTime);
   const shopCloseMin = timeToMinutes(settings.closeTime);
 
